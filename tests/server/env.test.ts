@@ -16,33 +16,33 @@ const complete = {
 
 function without(...keys: string[]): NodeJS.ProcessEnv {
   const copy = { ...complete };
-  for (const k of keys) delete copy[k];
+  for (const key of keys) delete copy[key];
   return copy;
 }
 
 describe("envStatus (diagnóstico da Vercel)", () => {
-  it("configuração completa de produção passa", () => {
-    const s = envStatus(complete);
-    expect(s.ok).toBe(true);
-    expect(s.issues).toEqual([]);
+  it("aceita uma configuração completa de produção", () => {
+    const status = envStatus(complete);
+    expect(status.ok).toBe(true);
+    expect(status.issues).toEqual([]);
   });
 
-  it("reproduz o erro do deploy antigo: sem banco e com pagamento simulado", () => {
-    const s = envStatus(without("DATABASE_URL", "PAYMENTS_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET"));
-    expect(s.ok).toBe(false);
-    expect(s.issues).toContain("DATABASE_URL é obrigatório em produção");
-    expect(s.issues).toContain("Pagamento simulado não pode rodar em produção");
+  it("reproduz o erro do deploy antigo sem banco e com pagamento simulado", () => {
+    const status = envStatus(without("DATABASE_URL", "PAYMENTS_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET"));
+    expect(status.ok).toBe(false);
+    expect(status.issues).toContain("DATABASE_URL é obrigatório em produção");
+    expect(status.issues).toContain("Pagamento simulado não pode rodar em produção");
   });
 
   it("aponta a assinatura secreta do webhook quando falta", () => {
-    const s = envStatus(without("MP_WEBHOOK_SECRET"));
-    expect(s.issues.join(" ")).toMatch(/MP_WEBHOOK_SECRET/);
-    expect(s.present.MP_WEBHOOK_SECRET).toBe(false);
+    const status = envStatus(without("MP_WEBHOOK_SECRET"));
+    expect(status.issues.join(" ")).toMatch(/MP_WEBHOOK_SECRET/);
+    expect(status.present.MP_WEBHOOK_SECRET).toBe(false);
   });
 
   it("nomeia a variável com formato errado", () => {
-    const s = envStatus({ ...complete, SITE_URL: "cacharra-lucas.vercel.app" });
-    expect(s.issues.join(" ")).toMatch(/SITE_URL/);
+    const status = envStatus({ ...complete, SITE_URL: "cacharra-lucas.vercel.app" });
+    expect(status.issues.join(" ")).toMatch(/SITE_URL/);
   });
 
   it("não expõe nenhum valor secreto", () => {
@@ -50,5 +50,11 @@ describe("envStatus (diagnóstico da Vercel)", () => {
     for (const secret of ["TEST-123", "segredo", "SenhaForte2026", "postgresql://"]) {
       expect(text).not.toContain(secret);
     }
+  });
+
+  it("não devolve o valor bruto de um provedor inválido", () => {
+    const status = envStatus({ ...complete, PAYMENTS_PROVIDER: "valor-secreto-colado-por-engano" });
+    expect(status.paymentsProvider).toBe("inválido");
+    expect(JSON.stringify(status)).not.toContain("valor-secreto-colado-por-engano");
   });
 });

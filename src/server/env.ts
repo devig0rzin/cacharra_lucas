@@ -53,14 +53,14 @@ export type Env = z.infer<typeof schema>;
 let cached: Env | null = null;
 
 /** Inclui o nome da variável quando o erro vem do zod (ex.: "SITE_URL: Invalid URL"). */
-function describeIssue(i: z.core.$ZodIssue): string {
-  const key = i.path.join(".");
-  return key && !i.message.includes(key) ? `${key}: ${i.message}` : i.message;
+function describeIssue(issue: z.core.$ZodIssue): string {
+  const key = issue.path.join(".");
+  return key && !issue.message.includes(key) ? `${key}: ${issue.message}` : issue.message;
 }
 
 /**
- * Diagnóstico da configuração SEM expor valores: só diz o que falta.
- * Usado por /api/health para conferir a Vercel sem abrir log.
+ * Diagnóstico da configuração sem expor valores: informa somente presença e erros.
+ * Usado por /api/health para conferir a configuração publicada na Vercel.
  */
 export function envStatus(source: NodeJS.ProcessEnv = process.env): {
   ok: boolean;
@@ -69,17 +69,32 @@ export function envStatus(source: NodeJS.ProcessEnv = process.env): {
   paymentsProvider: string;
 } {
   const keys = [
-    "DATABASE_URL", "SITE_URL", "PAYMENTS_PROVIDER", "MP_ACCESS_TOKEN", "MP_WEBHOOK_SECRET",
-    "ICAL_EXPORT_TOKEN", "CRON_SECRET", "ADMIN_PASSWORD", "ADMIN_SESSION_SECRET",
-    "RESEND_API_KEY", "AIRBNB_ICAL_URL",
+    "DATABASE_URL",
+    "SITE_URL",
+    "PAYMENTS_PROVIDER",
+    "MP_ACCESS_TOKEN",
+    "MP_WEBHOOK_SECRET",
+    "ICAL_EXPORT_TOKEN",
+    "CRON_SECRET",
+    "ADMIN_PASSWORD",
+    "ADMIN_SESSION_SECRET",
+    "RESEND_API_KEY",
+    "AIRBNB_ICAL_URL",
   ] as const;
-  const present = Object.fromEntries(keys.map((k) => [k, Boolean(source[k]?.trim())]));
+  const present = Object.fromEntries(keys.map((key) => [key, Boolean(source[key]?.trim())]));
   const parsed = schema.safeParse(source);
+  const rawPaymentsProvider = source.PAYMENTS_PROVIDER?.trim();
+  const paymentsProvider =
+    rawPaymentsProvider === "mock" || rawPaymentsProvider === "mercadopago"
+      ? rawPaymentsProvider
+      : rawPaymentsProvider
+        ? "inválido"
+        : "mock (padrão)";
   return {
     ok: parsed.success,
     issues: parsed.success ? [] : parsed.error.issues.map(describeIssue),
     present,
-    paymentsProvider: source.PAYMENTS_PROVIDER?.trim() || "mock (padrão)",
+    paymentsProvider,
   };
 }
 
@@ -87,7 +102,7 @@ export function env(): Env {
   if (!cached) {
     const parsed = schema.safeParse(process.env);
     if (!parsed.success) {
-      throw new Error(`Configuração inválida:\n${parsed.error.issues.map((i) => `- ${describeIssue(i)}`).join("\n")}`);
+      throw new Error(`Configuração inválida:\n${parsed.error.issues.map((issue) => `- ${describeIssue(issue)}`).join("\n")}`);
     }
     cached = parsed.data;
   }

@@ -28,11 +28,13 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: `rm -rf .data/e2e && npx next dev -p ${PORT}`,
+      command: `node scripts/prepare-e2e.mjs && npx next dev -p ${PORT}`,
       port: PORT,
       timeout: 120_000,
       reuseExistingServer: false,
       env: {
+        // Nunca deixe o .env.local apontar os testes para o Supabase real.
+        DATABASE_URL: "",
         PGLITE_DIR: ".data/e2e",
         SITE_URL: `http://localhost:${PORT}`,
         PAYMENTS_PROVIDER: "mock",
