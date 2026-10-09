@@ -8,12 +8,16 @@ import { property } from "@/config/property";
  * de reserva do topo sai da tela, para nunca cobrir o formulário de datas.
  */
 export function WhatsAppButton() {
-  const [hidden, setHidden] = useState(false);
+  // Começa escondido: evita piscar por cima do formulário antes da primeira medição.
+  const [hidden, setHidden] = useState(true);
 
   useEffect(() => {
     const card = document.querySelector(".booking-overlap");
     const mobile = window.matchMedia("(max-width: 767px)");
-    if (!card) return;
+    if (!card) {
+      queueMicrotask(() => setHidden(false));
+      return;
+    }
     let cardVisible = true;
     const update = () => setHidden(mobile.matches && cardVisible);
     const io = new IntersectionObserver(([entry]) => {

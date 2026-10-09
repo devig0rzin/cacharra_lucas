@@ -57,6 +57,11 @@ test("topo no celular: sem botão espremido, selos visíveis e WhatsApp fora do 
   await page.locator("#a-chacara").scrollIntoViewIfNeeded();
   await page.mouse.wheel(0, 900);
   await expect(whatsapp).not.toHaveAttribute("data-hidden", "true");
+  // no computador o botão aparece desde o início
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await expect(whatsapp).not.toHaveAttribute("data-hidden", "true");
+  await expect(whatsapp).toBeVisible();
 });
 
 test("reserva completa: datas → dados → pagamento → confirmada", async ({ page }) => {
