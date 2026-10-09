@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/*
+ * Tokens da marca — direção visual aprovada no mockup da proposta:
+ * verde-floresta, creme e um dourado de fim de tarde.
+ * Ajustar aqui quando chegar a identidade final.
+ */
+@theme {
+  --color-forest: #1f4a33;
+  --color-forest-deep: #163826;
+  --color-moss: #4f7a5a;
+  --color-cream: #f6f3ea;
+  --color-sand: #e8e1cf;
+  --color-ink: #1c2a21;
+  --color-muted: #5b6b5f;
+  --color-sun: #c8913a;
+  --color-danger: #a33a2c;
+
+  --font-display: "Fraunces Variable", Georgia, serif;
+  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-sun);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

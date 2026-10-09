@@ -1,0 +1,29 @@
+# A cada 15 minutos: puxa o calendário do Airbnb, libera datas de pagamentos
+# não concluídos e avisa o proprietário se detectar reserva dupla.
+#
+# Configure em Settings → Secrets and variables → Actions:
+#   SITE_URL     ex.: https://www.chacaraserraverde.com.br
+#   CRON_SECRET  o mesmo valor configurado no site
+#
+# Observação: o GitHub pode atrasar execuções agendadas em alguns minutos.
+name: Sincronizar calendários
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Chamar o site
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$SITE_URL" ]; then echo "SITE_URL não configurado; pulando."; exit 0; fi
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/sincronizar"
