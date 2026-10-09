@@ -118,3 +118,75 @@ describe("fluxo completo com Mercado Pago (API simulada)", () => {
     expect(await service.blockedNights("2026-10-01", "2026-10-31")).toEqual([]);
   });
 });
+
+describe("toMercadoPagoDate", () => {
+  it("acrescenta milissegundos ao formato que vem do banco", async () => {
+    const { toMercadoPagoDate } = await import("@/modules/payments/mercadopago");
+    expect(toMercadoPagoDate("2026-10-08T23:30:00Z")).toBe("2026-10-08T23:30:00.000Z");
+  });
+
+  it("devolve undefined para valor vazio ou data inválida", async () => {
+    const { toMercadoPagoDate } = await import("@/modules/payments/mercadopago");
+    expect(toMercadoPagoDate(null)).toBeUndefined();
+    expect(toMercadoPagoDate("")).toBeUndefined();
+    expect(toMercadoPagoDate("data ruim")).toBeUndefined();
+  });
+});
+
+describe("preferência enviada ao Mercado Pago", () => {
+  it("manda a validade no formato aceito e a referência da reserva", async () => {
+    const { service } = await setup();
+    const mp = fakeMercadoPago({ status: "approved", external_reference: null, transaction_amount: 1200 });
+    const payments = new MercadoPagoProvider({
+      accessToken: "TEST",
+      webhookSecret: SECRET,
+      siteUrl: "https://site.test",
+      propertyName: "Chácara",
+      fetchImpl: mp.fetchImpl,
+    });
+    await startReservation({ bookings: service, payments }, holdRequest());
+    const preference = mp.calls[0].body as { expiration_date_to: string; expires: boolean };
+    expect(preference.expires).toBe(true);
+    expect(preference.expiration_date_to).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  });
+});
+
+describe("notificações de teste e formatos alternativos", () => {
+  function provider(fetchImpl: typeof fetch) {
+    return new MercadoPagoProvider({
+      accessToken: "T",
+      webhookSecret: SECRET,
+      siteUrl: "https://s",
+      propertyName: "C",
+      fetchImpl,
+    });
+  }
+
+  it("ignora a simulação do painel quando o pagamento não existe", async () => {
+    const { service } = await setup();
+    const notFound = (async () => new Response('{"message":"Payment not found"}', { status: 404 })) as typeof fetch;
+    const response = await processPaymentWebhook({ bookings: service, payments: provider(notFound) }, webhookRequest("123456"));
+    expect(response).toEqual({ status: 200, body: "ignored" });
+  });
+
+  it("aceita ?topic=payment no lugar de ?type=payment", async () => {
+    const { service } = await setup();
+    const { booking } = await service.createHold(holdRequest());
+    const mp = fakeMercadoPago({ status: "approved", external_reference: booking.id, transaction_amount: 1200 });
+    const request = new Request("https://site.test/api/webhooks/mercadopago?topic=payment&data.id=555", {
+      method: "POST",
+      headers: { "x-signature": sign("555", "req-1"), "x-request-id": "req-1" },
+      body: "{}",
+    });
+    const response = await processPaymentWebhook({ bookings: service, payments: provider(mp.fetchImpl) }, request);
+    expect(response.body).toBe("confirmed");
+  });
+
+  it("propaga erro 5xx do Mercado Pago para permitir reenvio", async () => {
+    const { service } = await setup();
+    const unavailable = (async () => new Response("erro", { status: 503 })) as typeof fetch;
+    await expect(
+      processPaymentWebhook({ bookings: service, payments: provider(unavailable) }, webhookRequest("555")),
+    ).rejects.toThrow(/503/);
+  });
+});

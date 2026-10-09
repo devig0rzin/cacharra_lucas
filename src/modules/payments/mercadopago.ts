@@ -61,6 +61,21 @@ export function verifyMercadoPagoSignature(opts: {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** Normaliza a validade da preferência para o formato ISO 8601 aceito pelo Mercado Pago. */
+export function toMercadoPagoDate(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+/** O Mercado Pago não conhece esse pagamento, como ocorre em uma simulação do painel. */
+export class PaymentNotFoundError extends Error {
+  constructor(path: string) {
+    super(`Mercado Pago: não encontrado (${path})`);
+    this.name = "PaymentNotFoundError";
+  }
+}
+
 export class MercadoPagoProvider implements PaymentProvider {
   readonly name = "mercadopago" as const;
   private readonly fetchImpl: typeof fetch;
@@ -79,6 +94,7 @@ export class MercadoPagoProvider implements PaymentProvider {
       },
       signal: AbortSignal.timeout(15_000),
     });
+    if (res.status === 404) throw new PaymentNotFoundError(path);
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new Error(`Mercado Pago ${init.method ?? "GET"} ${path}: HTTP ${res.status} ${body.slice(0, 300)}`);
@@ -108,7 +124,7 @@ export class MercadoPagoProvider implements PaymentProvider {
         auto_return: "approved",
         // o link de pagamento vence junto com o prazo em que as datas ficam seguradas
         expires: true,
-        expiration_date_to: booking.holdExpiresAt ?? undefined,
+        expiration_date_to: toMercadoPagoDate(booking.holdExpiresAt),
         statement_descriptor: "SERRAVERDE",
       }),
     });
@@ -118,7 +134,7 @@ export class MercadoPagoProvider implements PaymentProvider {
   async handleWebhook(req: Request): Promise<PaymentNotification> {
     const url = new URL(req.url);
     const body = (await req.json().catch(() => ({}))) as { type?: string; data?: { id?: string | number } };
-    const type = url.searchParams.get("type") ?? body.type;
+    const type = url.searchParams.get("type") ?? url.searchParams.get("topic") ?? body.type;
     const dataId = url.searchParams.get("data.id") ?? (body.data?.id != null ? String(body.data.id) : null);
 
     const valid = verifyMercadoPagoSignature({
@@ -131,12 +147,20 @@ export class MercadoPagoProvider implements PaymentProvider {
 
     if (type !== "payment" || !dataId) return { kind: "ignored", reason: `evento ${type ?? "desconhecido"}` };
 
-    const payment = await this.api<{
+    let payment: {
       id: number;
       status: string;
       external_reference: string | null;
       transaction_amount: number;
-    }>(`/v1/payments/${encodeURIComponent(dataId)}`);
+    };
+    try {
+      payment = await this.api(`/v1/payments/${encodeURIComponent(dataId)}`);
+    } catch (error) {
+      if (error instanceof PaymentNotFoundError) {
+        return { kind: "ignored", reason: `pagamento ${dataId} não existe` };
+      }
+      throw error;
+    }
 
     const paymentRef = String(payment.id);
     if (payment.status === "approved" && payment.external_reference) {
