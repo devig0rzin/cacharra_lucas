@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { formatBRL, formatDateBR } from "@/lib/dates";
 import { getServices } from "@/server/container";
 import { env } from "@/server/env";
@@ -24,6 +25,7 @@ async function giveUp(formData: FormData) {
 }
 
 async function Checkout({ searchParams }: Pick<PageProps<"/pagamento-simulado">, "searchParams">) {
+  await connection();
   const sp = await searchParams;
   if (env().PAYMENTS_PROVIDER !== "mock") notFound();
   const id = typeof sp.reserva === "string" ? sp.reserva : "";
@@ -32,7 +34,7 @@ async function Checkout({ searchParams }: Pick<PageProps<"/pagamento-simulado">,
   if (!b) notFound();
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+    <div className="checkout-card">
       <p className="rounded-lg bg-sun/15 p-3 text-sm text-ink">
         Modo de desenvolvimento: esta tela substitui o Mercado Pago. Em produção o hóspede paga com Pix ou cartão na página do Mercado Pago.
       </p>
@@ -55,7 +57,7 @@ async function Checkout({ searchParams }: Pick<PageProps<"/pagamento-simulado">,
       <div className="mt-6 flex flex-wrap gap-3">
         <form action={approve}>
           <input type="hidden" name="id" value={b.id} />
-          <button className="rounded-lg bg-forest px-5 py-2.5 font-medium text-white">Aprovar pagamento</button>
+          <button className="button-primary rounded-xl">Aprovar pagamento</button>
         </form>
         <form action={giveUp}>
           <input type="hidden" name="id" value={b.id} />
@@ -68,11 +70,13 @@ async function Checkout({ searchParams }: Pick<PageProps<"/pagamento-simulado">,
 
 export default function MockCheckoutPage(props: PageProps<"/pagamento-simulado">) {
   return (
-    <main className="mx-auto w-full max-w-lg px-4 py-16">
+    <main id="conteudo" className="checkout-page">
+      <div className="checkout-container">
       <h1 className="mb-6 font-display text-3xl text-forest">Pagamento simulado</h1>
       <Suspense fallback={<p className="text-muted">Carregando…</p>}>
         <Checkout searchParams={props.searchParams} />
       </Suspense>
+      </div>
     </main>
   );
 }

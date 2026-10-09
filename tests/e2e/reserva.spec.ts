@@ -39,6 +39,8 @@ test("home apresenta todas as seções previstas sem rolagem horizontal", async 
 });
 
 test("reserva completa: datas → dados → pagamento → confirmada", async ({ page }) => {
+  // Em `next dev`, a primeira consulta pode inicializar o PGlite e compilar a rota.
+  test.setTimeout(120_000);
   await page.goto("/reservar");
   await page.getByRole("button", { name: "Próximo mês" }).click();
   await page.locator(`[data-date="${nextMonthDay(10)}"]`).click();
@@ -54,6 +56,8 @@ test("reserva completa: datas → dados → pagamento → confirmada", async ({ 
   await page.getByRole("button", { name: "Aprovar pagamento" }).click();
   await expect(page.getByTestId("booking-status")).toHaveText("Reserva confirmada");
   await expect(page.getByTestId("booking-code")).toHaveText(/^SV-/);
+  await expect(page.getByRole("link", { name: "Como chegar" })).toHaveAttribute("href", /maps/);
+  await expect(page.getByRole("link", { name: "Falar pelo WhatsApp" })).toHaveAttribute("href", /wa\.me/);
 });
 
 test("datas reservadas ficam bloqueadas para o próximo hóspede", async ({ page }) => {
@@ -144,9 +148,19 @@ test("capturas de tela", async ({ page }) => {
   await page.locator(`[data-date="${nextMonthDay(14)}"]`).click();
   await page.locator(`[data-date="${nextMonthDay(17)}"]`).click();
   await page.screenshot({ path: `${dir}/reservar-desktop.png`, fullPage: true });
+  await page.getByLabel("Nome completo").fill("Ana Costa");
+  await page.getByLabel("E-mail").fill("ana@example.com");
+  await page.getByLabel("WhatsApp").fill("(11) 97777-6666");
+  await page.getByRole("button", { name: "Ir para o pagamento" }).click();
+  await page.getByRole("button", { name: "Aprovar pagamento" }).click();
+  await expect(page.getByTestId("booking-status")).toHaveText("Reserva confirmada");
+  const confirmedUrl = page.url();
+  await page.screenshot({ path: `${dir}/reserva-confirmada-desktop.png`, fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.screenshot({ path: `${dir}/home-mobile.png` });
   await page.goto("/reservar");
   await page.screenshot({ path: `${dir}/reservar-mobile.png`, fullPage: true });
+  await page.goto(confirmedUrl);
+  await page.screenshot({ path: `${dir}/reserva-confirmada-mobile.png`, fullPage: true });
 });

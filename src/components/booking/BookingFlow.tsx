@@ -101,7 +101,7 @@ export function BookingFlow({ today, rules, initial }: Props) {
             <button
               type="button"
               onClick={() => setFirstMonth(addMonths(firstMonth, -1))}
-              disabled={firstMonth <= monthStart(today)}
+              disabled={loading || firstMonth <= monthStart(today)}
               className="calendar-nav-button"
               aria-label="Mês anterior"
             >
@@ -110,7 +110,7 @@ export function BookingFlow({ today, rules, initial }: Props) {
             <button
               type="button"
               onClick={() => setFirstMonth(addMonths(firstMonth, 1))}
-              disabled={addMonths(firstMonth, MONTHS_SHOWN) > lastBookable}
+              disabled={loading || addMonths(firstMonth, MONTHS_SHOWN) > lastBookable}
               className="calendar-nav-button"
               aria-label="Próximo mês"
             >

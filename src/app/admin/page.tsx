@@ -35,13 +35,13 @@ async function Dashboard() {
 
   return (
     <div className="grid gap-8">
-      <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+      <section className="admin-card">
         <h2 className="font-display text-2xl text-forest">Próximas reservas</h2>
         {upcoming.length === 0 ? (
           <p className="mt-3 text-muted">Nenhuma reserva futura ainda. Elas aparecem aqui assim que alguém reservar pelo site.</p>
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="admin-table w-full min-w-[720px] text-left text-sm">
               <thead className="text-muted">
                 <tr>
                   <th className="py-2 pr-3 font-normal">Código</th>
@@ -93,7 +93,7 @@ async function Dashboard() {
         )}
       </section>
 
-      <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+      <section className="admin-card">
         <h2 className="font-display text-2xl text-forest">Bloquear datas</h2>
         <p className="mt-1 text-sm text-muted">Para uso próprio ou manutenção. O bloqueio também vai para o Airbnb.</p>
         <div className="mt-4">
@@ -101,7 +101,7 @@ async function Dashboard() {
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+      <section className="admin-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-2xl text-forest">Airbnb</h2>
           <form action={syncNow}>
@@ -136,8 +136,8 @@ async function Dashboard() {
 
 export default function AdminPage() {
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
-      <div className="mb-8 flex items-center justify-between">
+    <main id="conteudo" className="admin-page site-container">
+      <div className="admin-page-heading">
         <h1 className="font-display text-3xl text-forest">Painel · {property.name}</h1>
         <form action={logout}>
           <button className="text-sm text-muted underline">Sair</button>

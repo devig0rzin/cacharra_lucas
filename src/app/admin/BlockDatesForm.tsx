@@ -9,17 +9,17 @@ export function BlockDatesForm() {
     <form action={action} className="grid gap-3 sm:grid-cols-[1fr_1fr_2fr_auto] sm:items-end">
       <label className="grid gap-1 text-sm">
         <span className="text-muted">De</span>
-        <input type="date" name="checkIn" required className="rounded-lg border border-sand px-3 py-2" />
+        <input type="date" name="checkIn" required className="admin-input" />
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-muted">Até (saída)</span>
-        <input type="date" name="checkOut" required className="rounded-lg border border-sand px-3 py-2" />
+        <input type="date" name="checkOut" required className="admin-input" />
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-muted">Motivo (opcional)</span>
-        <input name="note" placeholder="Uso próprio, manutenção…" className="rounded-lg border border-sand px-3 py-2" />
+        <input name="note" placeholder="Uso próprio, manutenção…" className="admin-input" />
       </label>
-      <button disabled={pending} className="rounded-lg bg-forest px-4 py-2 font-medium text-white disabled:opacity-60">
+      <button disabled={pending} className="button-primary rounded-xl disabled:opacity-60">
         Bloquear
       </button>
       {state.error && <p className="text-sm text-danger sm:col-span-4">{state.error}</p>}

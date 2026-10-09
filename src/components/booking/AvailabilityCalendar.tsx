@@ -34,7 +34,7 @@ export function AvailabilityCalendar(p: Props) {
   return <div className={`calendar-grid ${p.loading ? "is-loading" : ""}`} aria-busy={p.loading}>{Array.from({ length: p.months }, (_, i) => <Month key={i} month={addMonths(p.firstMonth, i)} {...p} activeDate={visibleActiveDate} hoverDate={hoverDate} onHover={setHoverDate} moveFocus={moveFocus} />)}</div>;
 }
 
-function Month({ month, today, lastBookable, blocked, checkIn, checkOut, onSelect, activeDate, hoverDate, onHover, moveFocus }: Props & { month: IsoDate; activeDate: IsoDate; hoverDate: IsoDate | null; onHover: (date: IsoDate | null) => void; moveFocus: (from: IsoDate, amount: number) => void }) {
+function Month({ month, today, lastBookable, blocked, checkIn, checkOut, onSelect, activeDate, hoverDate, onHover, moveFocus, loading }: Props & { month: IsoDate; activeDate: IsoDate; hoverDate: IsoDate | null; onHover: (date: IsoDate | null) => void; moveFocus: (from: IsoDate, amount: number) => void }) {
   const firstWeekday = new Date(`${month}T00:00:00Z`).getUTCDay();
   const next = addMonths(month, 1);
   const days: IsoDate[] = [];
@@ -48,6 +48,6 @@ function Month({ month, today, lastBookable, blocked, checkIn, checkOut, onSelec
     const inRange = (checkIn && checkOut && d > checkIn && d < checkOut) || previewing;
     const state = isStart || isEnd ? "selected" : inRange ? "range" : isBlocked ? "blocked" : "free";
     const label = `${+d.slice(8, 10)} de ${MONTHS[+d.slice(5, 7) - 1]}${isBlocked ? ", ocupado" : ""}${isStart ? ", entrada" : ""}${isEnd ? ", saída" : ""}`;
-    return <button key={d} type="button" disabled={past} onClick={() => onSelect(d)} onMouseEnter={() => onHover(d)} onMouseLeave={() => onHover(null)} onFocus={() => setTimeout(() => onHover(null), 0)} onKeyDown={(event) => { const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 7, ArrowUp: -7 }[event.key]; if (step) { event.preventDefault(); moveFocus(d, step); } }} aria-label={label} aria-pressed={isStart || isEnd} data-date={d} data-state={past ? "past" : state} tabIndex={!past && d === activeDate ? 0 : -1} className="calendar-day">{+d.slice(8, 10)}</button>;
+    return <button key={d} type="button" disabled={past || loading} onClick={() => onSelect(d)} onMouseEnter={() => onHover(d)} onMouseLeave={() => onHover(null)} onFocus={() => setTimeout(() => onHover(null), 0)} onKeyDown={(event) => { const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 7, ArrowUp: -7 }[event.key]; if (step) { event.preventDefault(); moveFocus(d, step); } }} aria-label={label} aria-pressed={isStart || isEnd} data-date={d} data-state={past ? "past" : state} tabIndex={!past && d === activeDate ? 0 : -1} className="calendar-day">{+d.slice(8, 10)}</button>;
   })}</div></div>;
 }

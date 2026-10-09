@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { AutoRefresh } from "@/components/booking/AutoRefresh";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -11,13 +12,14 @@ import { getServices } from "@/server/container";
 export const metadata: Metadata = { title: "Sua reserva", robots: { index: false } };
 
 async function Status({ params }: Pick<PageProps<"/reserva/[id]">, "params">) {
+  await connection();
   const { id } = await params;
   const { bookings } = await getServices();
   const b = await bookings.getById(id);
   if (!b) notFound();
 
   const details = (
-    <dl className="mt-6 grid gap-3 rounded-2xl bg-white p-5 text-sm shadow-sm ring-1 ring-black/5 sm:grid-cols-2">
+    <dl className="status-details">
       <div>
         <dt className="text-muted">Código</dt>
         <dd className="font-medium" data-testid="booking-code">{b.code}</dd>
@@ -48,15 +50,17 @@ async function Status({ params }: Pick<PageProps<"/reserva/[id]">, "params">) {
   switch (b.status) {
     case "confirmed":
       return (
-        <>
+        <section className="status-card status-confirmed">
+          <div className="status-icon" aria-hidden>✓</div>
           <h1 className="font-display text-4xl text-forest" data-testid="booking-status">Reserva confirmada</h1>
           <p className="mt-2 text-muted">Enviamos os detalhes para {b.guestEmail}. Até breve!</p>
           {details}
-        </>
+          <div className="status-actions"><a href={property.address.mapsUrl} className="button-primary">Como chegar</a><a href={`https://wa.me/${property.contact.whatsapp}`} className="text-link">Falar pelo WhatsApp</a></div>
+        </section>
       );
     case "pending_payment":
       return (
-        <>
+        <section className="status-card">
           <AutoRefresh seconds={5} />
           <h1 className="font-display text-4xl text-forest" data-testid="booking-status">Aguardando pagamento</h1>
           <p className="mt-2 text-muted">
@@ -64,27 +68,27 @@ async function Status({ params }: Pick<PageProps<"/reserva/[id]">, "params">) {
             Se você já pagou, a confirmação aparece aqui em instantes.
           </p>
           {details}
-        </>
+        </section>
       );
     case "payment_conflict":
       return (
-        <>
+        <section className="status-card">
           <h1 className="font-display text-4xl text-forest" data-testid="booking-status">Recebemos seu pagamento</h1>
           <p className="mt-2 text-muted">
             O pagamento chegou depois do prazo e essas datas foram ocupadas. Vamos entrar em contato para remarcar ou devolver o valor.
           </p>
           {details}
-        </>
+        </section>
       );
     default:
       return (
-        <>
+        <section className="status-card">
           <h1 className="font-display text-4xl text-forest" data-testid="booking-status">Reserva não concluída</h1>
           <p className="mt-2 text-muted">O prazo para pagamento terminou e as datas foram liberadas.</p>
           <a href="/reservar" className="mt-6 inline-block rounded-full bg-forest px-5 py-2.5 font-medium text-white">
             Fazer nova reserva
           </a>
-        </>
+        </section>
       );
   }
 }
@@ -93,8 +97,8 @@ export default function ReservaPage(props: PageProps<"/reserva/[id]">) {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
-        <Suspense fallback={<p className="text-muted">Carregando sua reserva…</p>}>
+      <main id="conteudo" className="status-page site-container">
+        <Suspense fallback={<p className="status-card text-muted">Carregando sua reserva…</p>}>
           <Status params={props.params} />
         </Suspense>
       </main>
