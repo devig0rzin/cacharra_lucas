@@ -1,40 +1,14 @@
 import { bookingRules } from "@/config/property";
 
-/**
- * Busca de datas do topo da home. É um <form method="get"> comum:
- * funciona até sem JavaScript e leva para /reservar com as datas preenchidas.
- */
+function FieldIcon({ type }: { type: "date" | "guests" }) {
+  return type === "date" ? <svg aria-hidden viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4m8-4v4M3 10h18" /></svg> : <svg aria-hidden viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-5 3-8 8-8s8 3 8 8" /></svg>;
+}
+
 export function DateSearchForm() {
-  return (
-    <form
-      action="/reservar"
-      method="get"
-      className="grid gap-3 rounded-2xl bg-white p-4 shadow-xl ring-1 ring-black/5 sm:grid-cols-[1fr_1fr_0.8fr_auto] sm:items-end sm:p-5"
-    >
-      <label className="grid gap-1 text-xs font-medium text-muted">
-        Entrada
-        <input type="date" name="entrada" className="rounded-lg border border-sand px-3 py-2 text-base text-ink" />
-      </label>
-      <label className="grid gap-1 text-xs font-medium text-muted">
-        Saída
-        <input type="date" name="saida" className="rounded-lg border border-sand px-3 py-2 text-base text-ink" />
-      </label>
-      <label className="grid gap-1 text-xs font-medium text-muted">
-        Hóspedes
-        <select name="hospedes" defaultValue="4" className="rounded-lg border border-sand px-3 py-2 text-base text-ink">
-          {Array.from({ length: bookingRules.maxGuests }, (_, i) => i + 1).map((n) => (
-            <option key={n} value={n}>
-              {n} {n === 1 ? "hóspede" : "hóspedes"}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button type="submit" className="rounded-lg bg-forest px-5 py-2.5 font-medium text-white hover:bg-forest-deep">
-        Ver disponibilidade
-      </button>
-      <p className="text-xs text-muted sm:col-span-4">
-        Mínimo de {bookingRules.minNights} noites · Pagamento via Mercado Pago (Pix ou cartão) · Confirmação por e-mail
-      </p>
-    </form>
-  );
+  return <div className="booking-search-shell"><form action="/reservar" method="get" className="booking-search">
+    <label><FieldIcon type="date" /><span><small>Check-in</small><input type="date" name="entrada" /></span></label>
+    <label><FieldIcon type="date" /><span><small>Check-out</small><input type="date" name="saida" /></span></label>
+    <label><FieldIcon type="guests" /><span><small>Hóspedes</small><select name="hospedes" defaultValue="4">{Array.from({ length: bookingRules.maxGuests }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n} {n === 1 ? "hóspede" : "hóspedes"}</option>)}</select></span></label>
+    <button type="submit" className="availability-button">Ver disponibilidade <span aria-hidden>→</span></button>
+  </form><p className="trust-strip"><span>◇</span> Reserva segura <i>•</i> Pagamento via Mercado Pago <i>•</i> Confirmação imediata</p></div>;
 }

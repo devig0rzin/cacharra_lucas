@@ -29,6 +29,15 @@ test("home mostra a busca de datas e leva para a reserva", async ({ page }) => {
   await expect(page.getByTestId("quote")).toContainText("R$ 1.800,00");
 });
 
+test("home apresenta todas as seções previstas sem rolagem horizontal", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  for (const heading of ["Bem-vindo à Chácara Serra Verde", "Destaques da sua estadia", "Acomodações", "Experiências", "Galeria de fotos", "Localização e como chegar", "Regras da casa", "Fale com a gente"]) {
+    await expect(page.getByRole("heading", { name: heading, exact: true })).toBeAttached();
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+});
+
 test("reserva completa: datas → dados → pagamento → confirmada", async ({ page }) => {
   await page.goto("/reservar");
   await page.getByRole("button", { name: "Próximo mês" }).click();
