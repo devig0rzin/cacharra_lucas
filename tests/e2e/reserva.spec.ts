@@ -6,6 +6,19 @@ const EXPORT_TOKEN = "e2e-export-token-0000000000";
 
 test.describe.configure({ mode: "serial" });
 
+test("navegação da home é acessível no celular", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Pular para o conteúdo" })).toBeAttached();
+  const menu = page.locator('button[aria-controls="mobile-menu"]');
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await menu.click();
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("navigation", { name: "Menu móvel" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+});
+
 test("home mostra a busca de datas e leva para a reserva", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
