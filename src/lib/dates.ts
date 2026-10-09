@@ -59,6 +59,15 @@ export function formatDateBR(date: IsoDate): string {
   return `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`;
 }
 
+/** Formata o intervalo em português para títulos de cobrança e espaços curtos. */
+export function formatDateRangeShort(checkIn: IsoDate, checkOut: IsoDate): string {
+  const months = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const formatDayMonth = (date: IsoDate) => `${Number(date.slice(8, 10))} ${months[Number(date.slice(5, 7)) - 1]}`;
+  const sameYear = checkIn.slice(0, 4) === checkOut.slice(0, 4);
+  const start = `${formatDayMonth(checkIn)}${sameYear ? "" : ` ${checkIn.slice(0, 4)}`}`;
+  return `${start} a ${formatDayMonth(checkOut)} ${checkOut.slice(0, 4)}`;
+}
+
 export function formatBRL(cents: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 }

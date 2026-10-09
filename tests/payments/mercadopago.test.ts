@@ -149,6 +149,16 @@ describe("preferência enviada ao Mercado Pago", () => {
     expect(preference.expires).toBe(true);
     expect(preference.expiration_date_to).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
+
+  it("remove boleto e caixa eletrônico e deixa Pix e cartões disponíveis", async () => {
+    const { service } = await setup();
+    const mp = fakeMercadoPago({ status: "approved", external_reference: null, transaction_amount: 1200 });
+    const payments = new MercadoPagoProvider({ accessToken: "TEST", webhookSecret: SECRET, siteUrl: "https://site.test", propertyName: "Chácara Serra Verde", fetchImpl: mp.fetchImpl });
+    await startReservation({ bookings: service, payments }, holdRequest());
+    const preference = mp.calls[0].body as { payment_methods: { excluded_payment_types: Array<{ id: string }> }; items: Array<{ title: string }> };
+    expect(preference.payment_methods.excluded_payment_types.map(({ id }) => id)).toEqual(["ticket", "atm"]);
+    expect(preference.items[0].title).toBe("Chácara Serra Verde — 10 out a 12 out 2026");
+  });
 });
 
 describe("notificações de teste e formatos alternativos", () => {

@@ -9,7 +9,7 @@
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Booking } from "@/modules/booking/domain";
-import { formatDateBR } from "@/lib/dates";
+import { formatDateRangeShort } from "@/lib/dates";
 import {
   InvalidWebhookSignatureError,
   type CheckoutSession,
@@ -111,13 +111,14 @@ export class MercadoPagoProvider implements PaymentProvider {
         items: [
           {
             id: booking.code,
-            title: `${this.cfg.propertyName} — ${formatDateBR(booking.checkIn)} a ${formatDateBR(booking.checkOut)}`,
+            title: `${this.cfg.propertyName} — ${formatDateRangeShort(booking.checkIn, booking.checkOut)}`,
             quantity: 1,
             currency_id: "BRL",
             unit_price: booking.totalCents / 100,
           },
         ],
         payer: { name: booking.guestName, email: booking.guestEmail },
+        payment_methods: { excluded_payment_types: [{ id: "ticket" }, { id: "atm" }] },
         external_reference: booking.id,
         notification_url: `${this.cfg.siteUrl}/api/webhooks/mercadopago`,
         back_urls: { success: returnUrl, pending: returnUrl, failure: returnUrl },
