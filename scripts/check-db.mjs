@@ -5,8 +5,6 @@
  * Confere, em ordem: a variável existe → a conexão abre → as tabelas foram
  * criadas → a trava de datas sobrepostas está ativa.
  */
-import postgres from "postgres";
-
 const TABELAS = ["bookings", "channel_blocks", "channel_sync_runs", "channel_conflict_alerts"];
 
 function erro(titulo, ...dicas) {
@@ -14,6 +12,17 @@ function erro(titulo, ...dicas) {
   for (const d of dicas) console.error(`   ${d}`);
   console.error("");
   process.exit(1);
+}
+
+let postgres;
+try {
+  ({ default: postgres } = await import("postgres"));
+} catch {
+  erro(
+    "As dependências do projeto ainda não foram instaladas.",
+    "Rode primeiro:  npm install",
+    "(na mesma pasta do package.json; demora alguns minutos na primeira vez)",
+  );
 }
 
 const url = process.env.DATABASE_URL;
