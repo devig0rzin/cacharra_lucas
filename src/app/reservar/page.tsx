@@ -26,13 +26,14 @@ export default function ReservarPage(props: PageProps<"/reservar">) {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
-        <h1 className="font-display text-4xl text-forest">Reserve sua estadia</h1>
-        <p className="mt-2 text-muted">
+      <main id="conteudo" className="booking-page site-container">
+        <p className="section-kicker">Sua próxima pausa começa aqui</p>
+        <h1 className="font-display text-4xl text-forest md:text-5xl">Reserve sua estadia</h1>
+        <p className="mt-3 max-w-3xl text-muted">
           Entrada a partir das {property.checkInTime} · Saída até as {property.checkOutTime} · Mínimo de {bookingRules.minNights} noites
         </p>
         <div className="mt-8">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-white/60" />}>
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-[1.75rem] bg-white/60" />}>
             <Flow searchParams={props.searchParams} />
           </Suspense>
         </div>

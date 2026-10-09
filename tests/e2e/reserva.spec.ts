@@ -80,6 +80,19 @@ test("mínimo de 2 noites", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Ir para o pagamento" })).toHaveCount(0);
 });
 
+test("calendário adapta meses e permite selecionar pelo teclado", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/reservar");
+  await expect(page.locator("[data-calendar-month]:visible")).toHaveCount(1);
+  const firstFree = page.locator('[data-state="free"][tabindex="0"]').first();
+  await firstFree.focus();
+  await page.keyboard.press("ArrowRight");
+  const focusedDate = await page.locator(":focus").getAttribute("data-date");
+  expect(focusedDate).toBeTruthy();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(`button[data-date="${focusedDate}"]`)).toHaveAttribute("data-state", "selected");
+});
+
 test("reserva do site aparece no calendário que o Airbnb importa", async ({ request }) => {
   const res = await request.get(`/api/calendario/${EXPORT_TOKEN}.ics`);
   expect(res.status()).toBe(200);

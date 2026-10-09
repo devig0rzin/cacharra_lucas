@@ -28,8 +28,10 @@ export function BookingFlow({ today, rules, initial }: Props) {
   const [blocked, setBlocked] = useState<Set<IsoDate>>(new Set());
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [state, formAction, pending] = useActionState<ReserveState, FormData>(reserve, {});
-  const availabilityKey = `${firstMonth}|${state.attempt ?? 0}`;
+  const availabilityKey = `${firstMonth}|${state.attempt ?? 0}|${retryKey}`;
   const loading = loadedKey !== availabilityKey;
 
   // Busca as noites ocupadas dos meses visíveis (e de novo após uma tentativa recusada).
@@ -40,6 +42,7 @@ export function BookingFlow({ today, rules, initial }: Props) {
     fetch(`/api/availability?from=${from}&to=${to}`, { signal: controller.signal, cache: "no-store" })
       .then((r) => r.json())
       .then((data: { blockedNights: IsoDate[] }) => {
+        setLoadFailed(false);
         setBlocked((prev) => {
           const next = new Set([...prev].filter((d) => d < from || d >= to));
           for (const d of data.blockedNights) next.add(d);
@@ -47,7 +50,10 @@ export function BookingFlow({ today, rules, initial }: Props) {
         });
       })
       .catch((err) => {
-        if (err.name !== "AbortError") setHint("Não conseguimos carregar a disponibilidade. Recarregue a página.");
+        if (err.name !== "AbortError") {
+          setLoadFailed(true);
+          setHint("Não conseguimos carregar a disponibilidade.");
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoadedKey(availabilityKey);
@@ -86,7 +92,7 @@ export function BookingFlow({ today, rules, initial }: Props) {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
-      <section aria-labelledby="cal-title" className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 sm:p-6">
+      <section aria-labelledby="cal-title" className="booking-calendar-card">
         <div className="mb-5 flex items-center justify-between gap-2">
           <h2 id="cal-title" className="font-display text-2xl text-forest">
             {!checkIn ? "Escolha a entrada" : !checkOut ? "Agora, a saída" : "Suas datas"}
@@ -96,7 +102,7 @@ export function BookingFlow({ today, rules, initial }: Props) {
               type="button"
               onClick={() => setFirstMonth(addMonths(firstMonth, -1))}
               disabled={firstMonth <= monthStart(today)}
-              className="rounded-full border border-sand px-3 py-1.5 text-sm disabled:opacity-40"
+              className="calendar-nav-button"
               aria-label="Mês anterior"
             >
               ‹
@@ -105,13 +111,14 @@ export function BookingFlow({ today, rules, initial }: Props) {
               type="button"
               onClick={() => setFirstMonth(addMonths(firstMonth, 1))}
               disabled={addMonths(firstMonth, MONTHS_SHOWN) > lastBookable}
-              className="rounded-full border border-sand px-3 py-1.5 text-sm disabled:opacity-40"
+              className="calendar-nav-button"
               aria-label="Próximo mês"
             >
               ›
             </button>
           </div>
         </div>
+        <div className="relative">
         <AvailabilityCalendar
           firstMonth={firstMonth}
           months={MONTHS_SHOWN}
@@ -123,6 +130,8 @@ export function BookingFlow({ today, rules, initial }: Props) {
           loading={loading}
           onSelect={select}
         />
+        {loading && <div className="calendar-skeleton" aria-hidden><span /><span /><span /><span /><span /><span /></div>}
+        </div>
         <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-3 w-3 rounded-full bg-forest" /> Selecionado
@@ -130,14 +139,16 @@ export function BookingFlow({ today, rules, initial }: Props) {
           <span className="flex items-center gap-1.5">
             <span className="line-through">12</span> Ocupado
           </span>
+          <span>A partir de {formatBRL(rules.nightlyRateCents)}/noite</span>
           <span>Mínimo de {rules.minNights} noites</span>
         </div>
         <p role="status" aria-live="polite" className="mt-3 min-h-5 text-sm text-danger">
           {hint}
         </p>
+        {loadFailed && <button type="button" className="retry-button" onClick={() => { setHint(null); setLoadFailed(false); setRetryKey((key) => key + 1); }}>Tentar de novo</button>}
       </section>
 
-      <aside className="h-fit rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 lg:sticky lg:top-6">
+      <aside id="booking-form" className="booking-summary-card">
         <dl className="grid grid-cols-2 gap-3 border-b border-sand pb-4 text-sm">
           <div>
             <dt className="text-muted">Entrada</dt>
@@ -227,6 +238,7 @@ export function BookingFlow({ today, rules, initial }: Props) {
           <p className="mt-4 text-sm text-muted">Selecione a entrada e a saída no calendário para continuar.</p>
         )}
       </aside>
+      {quote && stayFree && <div className="mobile-booking-bar"><div><small>Total</small><strong>{formatBRL(quote.totalCents)}</strong></div><button type="button" onClick={() => document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Continuar</button></div>}
     </div>
   );
 }
