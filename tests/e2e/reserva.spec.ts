@@ -12,8 +12,12 @@ test("navegação da home é acessível no celular", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Pular para o conteúdo" })).toBeAttached();
   const menu = page.locator('button[aria-controls="mobile-menu"]');
   await expect(menu).toHaveAttribute("aria-expanded", "false");
-  await menu.click();
-  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  // O clique só funciona depois que o React assume a página (hidratação);
+  // repete até o menu responder, sem depender de tempo fixo.
+  await expect(async () => {
+    if ((await menu.getAttribute("aria-expanded")) !== "true") await menu.click();
+    await expect(menu).toHaveAttribute("aria-expanded", "true", { timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
   await expect(page.getByRole("navigation", { name: "Menu móvel" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(menu).toHaveAttribute("aria-expanded", "false");
@@ -36,6 +40,23 @@ test("home apresenta todas as seções previstas sem rolagem horizontal", async 
     await expect(page.getByRole("heading", { name: heading, exact: true })).toBeAttached();
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+});
+
+test("topo no celular: sem botão espremido, selos visíveis e WhatsApp fora do formulário", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  // o botão "Reservar agora" do topo fica no menu, não no cabeçalho (como no mockup)
+  await expect(page.locator("header a.button-primary")).toBeHidden();
+  // o cartão de reserva não cobre os selos
+  const badges = await page.locator(".hero-badges").boundingBox();
+  const card = await page.locator(".booking-overlap").boundingBox();
+  expect(badges && card && badges.y + badges.height <= card.y).toBeTruthy();
+  // o WhatsApp não aparece por cima do formulário; surge depois de rolar
+  const whatsapp = page.locator(".whatsapp-button");
+  await expect(whatsapp).toHaveAttribute("data-hidden", "true");
+  await page.locator("#a-chacara").scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 900);
+  await expect(whatsapp).not.toHaveAttribute("data-hidden", "true");
 });
 
 test("reserva completa: datas → dados → pagamento → confirmada", async ({ page }) => {
@@ -88,6 +109,7 @@ test("calendário adapta meses e permite selecionar pelo teclado", async ({ page
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/reservar");
   await expect(page.locator("[data-calendar-month]:visible")).toHaveCount(1);
+  await expect(page.locator(".calendar-grid")).toHaveAttribute("aria-busy", "false");
   const firstFree = page.locator('[data-state="free"][tabindex="0"]').first();
   await firstFree.focus();
   await page.keyboard.press("ArrowRight");
@@ -95,6 +117,24 @@ test("calendário adapta meses e permite selecionar pelo teclado", async ({ page
   expect(focusedDate).toBeTruthy();
   await page.keyboard.press("Enter");
   await expect(page.locator(`button[data-date="${focusedDate}"]`)).toHaveAttribute("data-state", "selected");
+});
+
+test("teclado atravessa o fim do mês sem perder o foco (celular)", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/reservar");
+  await page.getByRole("button", { name: "Próximo mês" }).click();
+  await expect(page.locator(".calendar-grid")).toHaveAttribute("aria-busy", "false");
+  const lastDay = page.locator("[data-calendar-month]:visible button[data-date]").last();
+  const lastDate = await lastDay.getAttribute("data-date");
+  await lastDay.focus();
+  await page.keyboard.press("ArrowRight");
+  const nextMonthFirst = await page.evaluate((d) => {
+    const dt = new Date(`${d}T00:00:00Z`);
+    dt.setUTCDate(dt.getUTCDate() + 1);
+    return dt.toISOString().slice(0, 10);
+  }, lastDate);
+  await expect(page.locator(":focus")).toHaveAttribute("data-date", nextMonthFirst);
+  await expect(page.locator("[data-calendar-month]:visible")).toHaveCount(1);
 });
 
 test("reserva do site aparece no calendário que o Airbnb importa", async ({ request }) => {
@@ -162,5 +202,6 @@ test("capturas de tela", async ({ page }) => {
   await page.goto("/reservar");
   await page.screenshot({ path: `${dir}/reservar-mobile.png`, fullPage: true });
   await page.goto(confirmedUrl);
+  await expect(page.getByTestId("booking-status")).toHaveText("Reserva confirmada");
   await page.screenshot({ path: `${dir}/reserva-confirmada-mobile.png`, fullPage: true });
 });

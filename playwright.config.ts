@@ -29,8 +29,10 @@ export default defineConfig({
     },
     {
       command: `node scripts/prepare-e2e.mjs && npx next dev -p ${PORT}`,
-      port: PORT,
-      timeout: 120_000,
+      // Espera o /api/health responder 200: isso já inicializa o banco local
+      // e compila o container, então a primeira consulta do teste não demora.
+      url: `http://localhost:${PORT}/api/health`,
+      timeout: 180_000,
       reuseExistingServer: false,
       env: {
         // Nunca deixe o .env.local apontar os testes para o Supabase real.

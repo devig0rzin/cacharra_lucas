@@ -128,6 +128,11 @@ export function BookingFlow({ today, rules, initial }: Props) {
           checkIn={checkIn}
           checkOut={checkOut}
           loading={loading}
+          onNavigate={(delta) => {
+            const target = addMonths(firstMonth, delta);
+            if (target < monthStart(today) || target > lastBookable) return;
+            setFirstMonth(target);
+          }}
           onSelect={select}
         />
         {loading && <div className="calendar-skeleton" aria-hidden><span /><span /><span /><span /><span /><span /></div>}
