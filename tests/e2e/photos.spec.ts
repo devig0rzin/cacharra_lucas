@@ -7,6 +7,8 @@ const expectedPhotos = [
   "natureza.jpg",
   "sala.jpg",
   "por-do-sol.jpg",
+  "area-gourmet.png",
+  "acomodacoes.png",
 ];
 
 test("home exibe as seis fotografias sem placeholders", async ({ page }) => {

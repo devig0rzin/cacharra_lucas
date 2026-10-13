@@ -10,22 +10,18 @@ function Feature({ children }: { children: React.ReactNode }) { return <li class
 
 const highlightVisuals = [
   { kind: "photo", asset: media.pool },
-  { kind: "editorial", text: "Um espaço para cozinhar, celebrar e ficar à mesa." },
-  { kind: "editorial", text: "Quartos amplos para descansar com conforto." },
+  { kind: "photo", asset: media.gourmet },
+  { kind: "photo", asset: media.bedroom },
   { kind: "photo", asset: media.garden },
 ] as const;
 
-function PhotoHighlight({ asset }: { asset: typeof media.pool | typeof media.garden }) {
+function PhotoHighlight({ asset }: { asset: typeof media.pool | typeof media.gourmet | typeof media.bedroom | typeof media.garden }) {
   return <MediaFrame asset={asset} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="rounded-[1.1rem]" />;
-}
-
-function EditorialHighlight({ children }: { children: React.ReactNode }) {
-  return <div className="highlight-editorial-panel"><LeafIcon /><p>{children}</p></div>;
 }
 
 export function WelcomeSection() { return <section id="a-chacara" className="home-section welcome-section"><div className="site-container welcome-grid"><div className="welcome-media"><MediaFrame asset={media.welcome} sizes="(max-width: 768px) 100vw, 52vw" className="rounded-[1.5rem]" />{propertyVideoUrl && <VideoDialog url={propertyVideoUrl} />}<p className="hand-note">{homeContent.welcome.note}</p></div><div className="welcome-copy"><p className="section-kicker">Bem-vindo à</p><h2>{homeContent.welcome.title}</h2><p>{homeContent.welcome.text}</p><ul>{homeContent.welcome.features.map((item) => <Feature key={item}>{item}</Feature>)}</ul><Link href="#acomodacoes" className="button-primary">Conheça a chácara <span aria-hidden>→</span></Link></div></div></section>; }
 
-export function HighlightsSection() { return <section className="home-section highlights-section"><div className="site-container"><div className="section-heading-row"><div><h2>Destaques da sua estadia</h2><p>Tudo o que você precisa para viver dias incríveis.</p></div><Link href="#comodidades" className="text-link">Ver todas as comodidades <span aria-hidden>→</span></Link></div><div id="comodidades" className="highlight-grid">{property.highlights.map((item, index) => { const visual = highlightVisuals[index]; return <article key={item.title} className={`highlight-card highlight-card-${visual.kind}`}>{visual.kind === "photo" ? <PhotoHighlight asset={visual.asset} /> : <EditorialHighlight>{visual.text}</EditorialHighlight>}<div className="highlight-icon"><LeafIcon /></div><h3>{item.title}</h3><p>{item.text}</p></article>; })}</div></div></section>; }
+export function HighlightsSection() { return <section className="home-section highlights-section"><div className="site-container"><div className="section-heading-row"><div><h2>Destaques da sua estadia</h2><p>Tudo o que você precisa para viver dias incríveis.</p></div><Link href="#comodidades" className="text-link">Ver todas as comodidades <span aria-hidden>→</span></Link></div><div id="comodidades" className="highlight-grid">{property.highlights.map((item, index) => { const visual = highlightVisuals[index]; return <article key={item.title} className="highlight-card"><PhotoHighlight asset={visual.asset} /><div className="highlight-icon"><LeafIcon /></div><h3>{item.title}</h3><p>{item.text}</p></article>; })}</div></div></section>; }
 
 export function AccommodationsSection() { return <section id="acomodacoes" className="home-section accommodation-section"><div className="site-container accommodation-grid"><div className="accommodation-copy"><p className="section-kicker">Acomodações</p><h2>Acomodações</h2><h3>{homeContent.accommodations.title}</h3><p>{homeContent.accommodations.text}</p><Link href="/reservar" className="button-primary">Consultar datas <span aria-hidden>→</span></Link></div><div className="accommodation-media"><MediaFrame asset={media.living} sizes="(max-width: 768px) 100vw, 58vw" className="rounded-[1.75rem]" /><p className="accommodation-caption">Sala de convivência</p></div></div></section>; }
 
